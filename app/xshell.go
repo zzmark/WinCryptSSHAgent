@@ -139,6 +139,13 @@ type signRequestAgentMsg struct {
 	Flags   uint32
 }
 
+type signRequestAgentMsgXshell7 struct {
+	KeyBlob []byte `sshtype:"13"`
+	Data    []byte
+	Flags   uint32
+	Others  uint64
+}
+
 func (s *xshellProxy) Read(p []byte) (n int, err error) {
 	if len(s.buf) > 0 {
 		n := copy(p, s.buf)
@@ -163,10 +170,22 @@ func (s *xshellProxy) Read(p []byte) (n int, err error) {
 	}
 	// sign
 	if s.buf[4] == agentSignRequest {
-		var req signRequestAgentMsg
-		if err := ssh.Unmarshal(s.buf[4:], &req); err != nil {
-			l += 4
-			s.buf = append(s.buf, []byte{0, 0, 0, 0}...)
+		success := false
+		{
+			var req signRequestAgentMsgXshell7
+			if err := ssh.Unmarshal(s.buf[4:], &req); err == nil {
+				l -= 4
+				nl := len(s.buf) - 4
+				s.buf = s.buf[:nl]
+				success = true
+			}
+		}
+		if !success {
+			var req signRequestAgentMsg
+			if err := ssh.Unmarshal(s.buf[4:], &req); err != nil {
+				l += 4
+				s.buf = append(s.buf, []byte{0, 0, 0, 0}...)
+			}
 		}
 	}
 	binary.BigEndian.PutUint32(s.buf, l)
