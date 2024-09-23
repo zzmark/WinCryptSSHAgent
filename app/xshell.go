@@ -173,7 +173,7 @@ func (s *xshellProxy) Read(p []byte) (n int, err error) {
 		success := false
 		{
 			var req signRequestAgentMsgXshell7
-			if err := ssh.Unmarshal(s.buf[4:], &req); err == nil {
+			if err := ssh.Unmarshal(s.buf[4:], &req); err != nil {
 				l -= 4
 				nl := len(s.buf) - 4
 				s.buf = s.buf[:nl]
